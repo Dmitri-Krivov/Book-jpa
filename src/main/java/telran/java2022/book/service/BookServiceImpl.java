@@ -56,25 +56,24 @@ public class BookServiceImpl implements BookService {
 	@Transactional
 	public BookDto removeBook(String isbn) {
         Book book = bookRepository.findById(isbn).orElseThrow(EntityNotFoundException::new);
-        BookDto bookDto = modelMapper.map(book, BookDto.class);
         bookRepository.delete(book);
-        return bookDto;
+//      bookRepository.deleteById(isbn);
+        return modelMapper.map(book, BookDto.class);
 	}
 
 	@Override
+	@Transactional
 	public BookDto updateBook(String isbn, String title) {
         Book book = bookRepository.findById(isbn).orElseThrow(EntityNotFoundException::new);
         book.setTitle(title);
-        bookRepository.save(book);
+//      bookRepository.save(book);// т.к. и так нее отключается и сохраняет. Если есть @Transactional 
         return modelMapper.map(book, BookDto.class);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Iterable<BookDto> findBooksByAuthor(String authorName) {
-        Author author = authorRepository.findById(authorName).orElseThrow(EntityNotFoundException::new);
-		//???
-        return bookRepository.findAllBooksByAuthors(author)
+		        return bookRepository.findByAuthorsName(authorName)
 				.map(b -> modelMapper.map(b, BookDto.class))
 				.collect(Collectors.toList());
 	}
@@ -82,10 +81,9 @@ public class BookServiceImpl implements BookService {
 	@Override
 	@Transactional(readOnly = true)
 	public Iterable<BookDto> findBooksByPublisher(String publisherName) {
-	       Publisher publisher = publisherRepository.findById(publisherName).orElseThrow(EntityNotFoundException::new);
-	       return bookRepository.findBooksByPublisher(publisher)
-	                .map(book -> modelMapper.map(book, BookDto.class))
-	                .collect(Collectors.toList());
+		  return bookRepository.findByPublisherPublisherName(publisherName)
+					.map(b -> modelMapper.map(b, BookDto.class))
+					.collect(Collectors.toList());
 	}
 
 	@Override
@@ -100,18 +98,23 @@ public class BookServiceImpl implements BookService {
 	@Override
 	@Transactional(readOnly = true)
 	public Iterable<String> findPublishersByAuthor(String authorName) {
-		return null;
+		return publisherRepository.findDistinctByBooksAuthorsName(authorName)
+				.map(Publisher::getPublisherName)
+				.collect(Collectors.toList());
+		
+		//		return publisherRepository.findPublishersByAuthor(authorName);
 	}
 
 	@Override
 	@Transactional
 	public AuthorDto removeAuthor(String authorName) {
 		Author author = authorRepository.findById(authorName).orElseThrow(EntityNotFoundException::new);
-//		if(bookRepository.findBooksByAuthor(authorName)){
-//			throw new EntityNotFoundException();
-//		}
+//		bookRepository.findByAuthorsName(authorName).forEach(b->bookRepository.delete(b));
+
         authorRepository.delete(author);
-		return null;
+//      authorRepository.deleteById(authorName);
+
+		return modelMapper.map(author, AuthorDto.class);
 	}
 
 }
